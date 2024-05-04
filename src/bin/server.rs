@@ -1,6 +1,7 @@
 use futures_util::sink::SinkExt;
 use futures_util::stream::StreamExt;
 use std::error::Error;
+use gethostname::gethostname;
 use std::net::SocketAddr;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::broadcast::{channel, Sender};
@@ -16,6 +17,7 @@ async fn handle_connection(
         .send(Message::text("Welcome to chat! Type a message".to_string()))
         .await?;
     let mut bcast_rx = bcast_tx.subscribe();
+    let hostname = gethostname().into_string().unwrap_or_else(|_| "unknown".to_string());
 
     // A continuous loop for concurrently performing two tasks: (1) receiving
     // messages from `ws_stream` and broadcasting them, and (2) receiving
@@ -26,7 +28,7 @@ async fn handle_connection(
                 match incoming {
                     Some(Ok(msg)) => {
                         if let Some(text) = msg.as_text() {
-                            println!("From client {addr:?} {text:?}");
+                            println!("New connection from {}'s Computer{}", hostname, addr);
                             bcast_tx.send(text.into())?;
                         }
                     }
